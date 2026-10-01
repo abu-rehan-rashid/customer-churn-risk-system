@@ -1,0 +1,29 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual Environments
+venv/
+env/
+ENV/
+.venv/
+
+# Environment variables & local configuration
+.env
+.env.local
+
+# IDE & Editor Settings
+.vscode/
+.idea/
+
+# Jupyter Notebook Checkpoints
+.ipynb_checkpoints
+
+# Large Model Artifacts & Data Logs
+models/*.pkl
+*.log
+
+# OS Generated Files
+.DS_Store
+Thumbs.db

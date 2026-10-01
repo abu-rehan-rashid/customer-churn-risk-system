@@ -1,0 +1,30 @@
+version: '3.8'
+
+services:
+  churn-fastapi-service:
+    build: .
+    container_name: churn_intelligence_api
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    volumes:
+      - .:/app
+    entrypoint: []
+    command: ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
+    environment:
+      - PYTHONUNBUFFERED=1
+
+  churn-streamlit-ui:
+    build: .
+    container_name: churn_intelligence_ui
+    ports:
+      - "8501:8501"
+    restart: unless-stopped
+    volumes:
+      - .:/app
+    entrypoint: []
+    command: ["streamlit", "run", "ui_app.py", "--server.port=8501", "--server.address=0.0.0.0"]
+    environment:
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      - churn-fastapi-service
