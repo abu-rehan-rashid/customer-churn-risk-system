@@ -2,11 +2,13 @@
 
 Churn prediction on the Kaggle Telco dataset with **SHAP explainability**, a **Streamlit dashboard** and a **FastAPI scoring endpoint**. Given a customer's profile, it returns a churn probability, a risk tier, a recommended retention action, and which features pushed the risk up or down.
 
-![Real-time scoring and SHAP attribution](docs/screenshots/01-realtime-shap.png)
+<p align="center">
+  <img width="100%" height="832" alt="Real-Time Evaluator & SHAP Explainability" src="https://github.com/user-attachments/assets/9f68b9cc-38a5-4f0e-ae54-a779ed6633b9" />
+</p>
 
 <p align="center">
-  <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/ade5cf30-1d82-497e-801d-709388c7e380" />
-  <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/a8430433-03af-46d1-9a41-cf2b48ebfc31" />
+  <img width="48%" height="834" alt="What-if Sensitivity Simulator" src="https://github.com/user-attachments/assets/81b1247c-9e8d-4058-b4c2-b6b916b22130" />
+  <img width="48%" height="783" alt="Model Health & Governance Metrics" src="https://github.com/user-attachments/assets/127108f3-2c41-46b3-9b47-108c022df74f" />
 </p>
 
 ---
