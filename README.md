@@ -5,8 +5,8 @@ Churn prediction on the Kaggle Telco dataset with **SHAP explainability**, a **S
 ![Real-time scoring and SHAP attribution](docs/screenshots/01-realtime-shap.png)
 
 <p align="center">
-  <img src="docs/screenshots/02-what-if.png" width="48%" alt="What-if tenure simulator">
-  <img src="docs/screenshots/03-model-performance.png" width="48%" alt="Model performance tab">
+  <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/ade5cf30-1d82-497e-801d-709388c7e380" />
+  <img width="1920" height="1080" alt="image" src="https://github.com/user-attachments/assets/a8430433-03af-46d1-9a41-cf2b48ebfc31" />
 </p>
 
 ---
