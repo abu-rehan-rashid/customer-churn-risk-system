@@ -1,47 +1,133 @@
-# 🛡️ Enterprise Customer Churn Intelligence & Explainability Platform
+# 🛡️ Customer Churn Risk Prediction System
 
-An end-to-end Machine Learning system engineered to predict customer churn risk, deliver explainable AI (XAI) feature attributions using SHAP, run interactive sensitivity simulations, execute batch scoring, and serve real-time predictions via FastAPI and Streamlit.
+Churn prediction on the Kaggle Telco dataset with **SHAP explainability**, a **Streamlit dashboard** and a **FastAPI scoring endpoint**. Given a customer's profile, it returns a churn probability, a risk tier, a recommended retention action, and which features pushed the risk up or down.
 
----
+![Real-time scoring and SHAP attribution](docs/screenshots/01-realtime-shap.png)
 
-## 📌 Executive Summary
-* **Business Purpose:** Identify high-risk subscription accounts prior to churn to deploy targeted retention offers and reduce revenue loss.
-* **Tech Stack:** Python 3.10, Scikit-Learn, XGBoost, SHAP, FastAPI, Streamlit, Plotly, Pandas.
-* **Key Innovation:** Solves One-Hot Encoding interpretability degradation by aggregating SHAP log-odds contributions back to raw categorical features for clear business stakeholder insight.
-* **Performance Benchmark:** **0.846 ROC-AUC**, **80.2% Recall**, **52.5% Precision**, and **0.635 F1-Score** on holdout test evaluation.
-
----
-
-## ⭐ Key Features
-
-* **Real-Time Churn Risk Scoring:** Categorizes accounts into actionable risk tiers based on model probability output:
-  * 🔴 **High Risk ($\ge 70\%$):** Immediate Retention Offer / Priority Call
-  * 🟠 **Medium Risk ($35\%\text{--}69\%$):** Targeted Email Campaign & Feedback Survey
-  * 🟢 **Low Risk ($< 35\%$):** No Action Needed
-* **Mathematical SHAP Attribution:** Re-aggregates encoded dummy variables back to parent columns, displaying exact directionality (Red = Risk Increase, Green = Retention Support).
-* **Interactive Sensitivity Simulator:** Allows account managers to run "what-if" scenarios across variable tenure ranges to project churn risk trajectories in real time.
-* **Enterprise Batch Scoring Engine:** Processes multi-record CSV files, generating row-level risk predictions and visual distribution breakdowns.
-* **Production REST API:** Serves validated prediction payloads via FastAPI with Pydantic request modeling and OpenAPI documentation.
-* **Model Governance & Monitoring:** Displays holdout confusion matrices, cross-validation metrics, and global feature importance metrics inside a centralized dashboard.
+<p align="center">
+  <img src="docs/screenshots/02-what-if.png" width="48%" alt="What-if tenure simulator">
+  <img src="docs/screenshots/03-model-performance.png" width="48%" alt="Model performance tab">
+</p>
 
 ---
 
-## 🏗️ System Architecture & Data Flow
+## Highlights
+
+- **Explainable predictions:** SHAP values (log-odds, XGBoost TreeExplainer) are summed from one-hot columns back to the original features (e.g. all `Contract_*` columns → `Contract`), so the chart reads in business terms.
+- **Risk tiers with actions:** each probability maps to a tier and a suggested action (see table below).
+- **What-if simulator:** vary tenure and see how churn probability changes.
+- **Batch scoring:** upload a CSV in the dashboard and score every row.
+- **REST API:** `POST /predict` with Pydantic validation and auto-generated docs at `/docs`.
+
+| Risk tier | Probability | Recommended action |
+|---|---|---|
+| 🔴 High | ≥ 70% | Immediate retention offer / priority call |
+| 🟠 Medium | 35% to 69% | Targeted email campaign and feedback survey |
+| 🟢 Low | < 35% | No action needed |
+
+## Model Performance
+
+Evaluated on a holdout set of 1,409 customers (Kaggle Telco Customer Churn).
+
+| ROC-AUC | Recall | Precision | F1 |
+|---|---|---|---|
+| 0.846 | 80.2% | 52.5% | 0.635 |
+
+| | Predicted retained | Predicted churned |
+|---|---|---|
+| **Actually retained** | 764 | 271 |
+| **Actually churned** | 74 | 300 |
+
+**Reading the trade-off:** the model catches 300 of 374 churners (80.2%) but also raises 271 false alarms (precision 52.5%). That suits cases where a retention offer is cheap compared with losing a customer. If offers are expensive, a higher decision threshold would trade recall for precision.
+
+## Tech Stack
+
+Python 3.10+, scikit-learn, XGBoost, SHAP, FastAPI, Pydantic, Streamlit, Plotly, Pandas, Docker.
+
+## Quick Start
+
+```bash
+git clone https://github.com/abu-rehan-rashid/customer-churn-risk-system.git
+cd customer-churn-risk-system
+
+python -m venv venv
+venv\Scripts\activate          # Windows (Linux/macOS: source venv/bin/activate)
+pip install -r requirements.txt
+
+# The trained model is not committed, so generate it first
+python src/train.py            # creates models/churn_pipeline.pkl and models/metrics.json
+
+streamlit run ui_app.py        # dashboard at http://localhost:8501
+uvicorn app:app --reload       # API at http://localhost:8000 (docs at /docs)
+```
+
+**Docker:**
+
+```bash
+docker compose up --build
+```
+
+## API Usage
+
+`GET /` returns `{"status": "online", "model_loaded": true}`.
+
+`POST /predict` accepts the customer fields (all have defaults, so you can send only the ones you care about):
+
+```bash
+curl -X POST http://localhost:8000/predict \
+  -H "Content-Type: application/json" \
+  -d '{"tenure": 6, "Contract": "Month-to-month", "InternetService": "Fiber optic", "MonthlyCharges": 85.0}'
+```
+
+Response shape:
+
+```json
+{
+  "churn_probability": 0.8690,
+  "risk_level": "High Risk",
+  "recommended_action": "Immediate Retention Offer / Priority Call"
+}
+```
+
+## Architecture
 
 ```text
-[ IBM / Kaggle Dataset ] ──> [ src/data_loader.py ] ──> [ data/churn_data.csv ]
-                                                               │
-                                                               ▼
-[ models/metrics.json ] <── [ src/train.py ] <─── [ Preprocessing & XGBoost ]
-[ models/churn_pipeline.pkl ]                                  │
-          │                                                    │
-          └─────────────────────┬──────────────────────────────┘
-                                │
-                                ▼
-                     [ src/predict.py ]
-                     (ChurnRiskEngine)
-                                │
-          ┌─────────────────────┴─────────────────────┐
-          ▼                                           ▼
-  [ REST API: app.py ]                       [ UI: ui_app.py ]
-  (FastAPI Endpoint)                        (Streamlit Dashboard)
+data/churn_data.csv ──> src/train.py ──> models/churn_pipeline.pkl
+   (Kaggle Telco)        (preprocessing      models/metrics.json
+                          + XGBoost)                │
+                                                    ▼
+                                         src/predict.py (ChurnRiskEngine)
+                                         predict_risk() · explain_instance()
+                                                    │
+                                  ┌─────────────────┴─────────────────┐
+                                  ▼                                   ▼
+                       app.py (FastAPI)                    ui_app.py (Streamlit)
+```
+
+## Project Structure
+
+```text
+├── app.py                  # FastAPI service
+├── ui_app.py               # Streamlit dashboard (4 tabs)
+├── src/
+│   ├── data_loader.py      # dataset preparation
+│   ├── train.py            # training + evaluation
+│   └── predict.py          # ChurnRiskEngine: scoring + SHAP
+├── data/churn_data.csv
+├── models/metrics.json
+├── Dockerfile
+├── docker-compose.yml
+└── requirements.txt
+```
+
+## Limitations
+
+- Trained and validated on a single public dataset (Telco); not tested on other customer data.
+- The API has no authentication, and missing fields silently fall back to default values.
+- No automated tests yet.
+- Batch scoring is available in the dashboard only, not as an API endpoint.
+
+## Author
+
+**Abu Rehan** · BSIT, The Islamia University of Bahawalpur
+[LinkedIn](https://www.linkedin.com/in/abu-rehan-ml) · [GitHub](https://github.com/abu-rehan-rashid)
