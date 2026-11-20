@@ -1,5 +1,7 @@
 # 🛡️ Customer Churn Risk Prediction System
 
+![CI Pipeline](https://github.com/abu-rehan-rashid/customer-churn-risk-system/actions/workflows/ci.yml/badge.svg)
+
 Churn prediction on the Kaggle Telco dataset with **SHAP explainability**, a **Streamlit dashboard** and a **FastAPI scoring endpoint**. Given a customer's profile, it returns a churn probability, a risk tier, a recommended retention action, and which features pushed the risk up or down.
 
 <p align="center">
