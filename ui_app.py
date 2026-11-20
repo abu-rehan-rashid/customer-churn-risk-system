@@ -1,11 +1,13 @@
 import os
 import json
+import sqlite3
 import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.graph_objects as go
 import plotly.express as px
 from src.predict import ChurnRiskEngine
+from src.threshold_optimizer import find_optimal_threshold
 
 # Page Config
 st.set_page_config(
@@ -15,19 +17,23 @@ st.set_page_config(
 )
 
 # Load ML Engine
+
+
 @st.cache_resource
 def load_engine():
     return ChurnRiskEngine()
 
+
 try:
     engine = load_engine()
 except Exception as e:
-    st.error(f"Failed to load ML Engine: {e}. Please ensure 'python src/train.py' has been executed.")
+    st.error(
+        f"Failed to load ML Engine: {e}. Please ensure 'python src/train.py' has been executed.")
     st.stop()
 
 # Header
 st.title("🛡️ Enterprise Churn Intelligence & Explainability Platform")
-st.caption("Real-time Churn Probability Scoring, Mathematical SHAP Feature Attribution, and Interactive What-If Simulation Engine")
+st.caption("Real-time Churn Probability Scoring, Mathematical SHAP Feature Attribution, Cost-Based ROI Optimization & Live Telemetry")
 
 st.divider()
 
@@ -50,7 +56,7 @@ tab1, tab2, tab3, tab4 = st.tabs([
     "🎯 Real-Time Evaluator & SHAP Explainability",
     "🧪 What-If Sensitivity Simulator",
     "📁 Batch Risk Scoring Engine",
-    "📊 Model Performance & Governance"
+    "📊 Governance, Business ROI & Live Telemetry"
 ])
 
 # -----------------------------------------------------------------------------
@@ -131,7 +137,6 @@ with tab1:
         color = "#FF4B4B" if risk_level == "High Risk" else (
             "#FFA500" if risk_level == "Medium Risk" else "#00CC96")
 
-        # Gauge Chart
         fig_gauge = go.Figure(go.Indicator(
             mode="gauge+number",
             value=prob * 100,
@@ -159,16 +164,17 @@ with tab1:
 
         st.write("---")
         st.subheader("🔍 Mathematical SHAP Feature Attribution")
-        st.caption("Exact Shapley values showing how features push probability up (Red = Risk Increase) or down (Green = Retention Support):")
+        st.caption(
+            "Exact Shapley values showing how features push probability up (Red = Risk Increase) or down (Green = Retention Support):")
 
-        # Safe SHAP Execution
         try:
             shap_df = engine.explain_instance(payload)
         except Exception:
             shap_df = None
 
         if shap_df is not None and not shap_df.empty and 'SHAP_Value' in shap_df.columns:
-            colors = ['#FF4B4B' if val >= 0 else '#00CC96' for val in shap_df['SHAP_Value']]
+            colors = ['#FF4B4B' if val >=
+                      0 else '#00CC96' for val in shap_df['SHAP_Value']]
 
             fig_shap = go.Figure(go.Bar(
                 x=shap_df['SHAP_Value'],
@@ -201,7 +207,8 @@ with tab1:
             )
             st.plotly_chart(fig_shap, use_container_width=True)
         else:
-            st.info("SHAP attribution chart is temporarily unavailable for this instance.")
+            st.info(
+                "SHAP attribution chart is temporarily unavailable for this instance.")
 
 
 # -----------------------------------------------------------------------------
@@ -209,19 +216,21 @@ with tab1:
 # -----------------------------------------------------------------------------
 with tab2:
     st.subheader("🧪 Interactive What-If Sensitivity Simulator")
-    st.markdown("Simulate how changing tenure impacts customer churn risk in real-time.")
+    st.markdown(
+        "Simulate how changing tenure impacts customer churn risk in real-time.")
 
     sim_range = st.slider("Simulate Tenure Range (Months)", 1, 72, (1, 36))
-    
+
     tenures = list(range(sim_range[0], sim_range[1] + 1))
     probs = []
 
-    # Safely load payload from session state
     temp_payload = st.session_state["current_payload"].copy()
     for t in tenures:
         temp_payload['tenure'] = t
-        temp_payload['TotalCharges'] = t * temp_payload['MonthlyCharges'].values[0]
-        p = engine.predict_risk(temp_payload).iloc[0]['churn_probability'] * 100
+        temp_payload['TotalCharges'] = t * \
+            temp_payload['MonthlyCharges'].values[0]
+        p = engine.predict_risk(
+            temp_payload).iloc[0]['churn_probability'] * 100
         probs.append(p)
 
     sens_df = pd.DataFrame({
@@ -262,12 +271,13 @@ with tab3:
             if st.button("🚀 Process Batch Scoring"):
                 with st.spinner("Scoring dataset..."):
                     results_df = engine.predict_risk(batch_df)
-                    final_batch = pd.concat([batch_df.reset_index(drop=True), results_df.reset_index(drop=True)], axis=1)
+                    final_batch = pd.concat([batch_df.reset_index(
+                        drop=True), results_df.reset_index(drop=True)], axis=1)
 
                     st.success("Batch Analysis Complete!")
-                    
+
                     cols_to_show = [c for c in ['customerID', 'tenure', 'Contract', 'MonthlyCharges',
-                                 'churn_probability', 'risk_level', 'recommended_action'] if c in final_batch.columns]
+                                                'churn_probability', 'risk_level', 'recommended_action'] if c in final_batch.columns]
                     st.dataframe(final_batch[cols_to_show].head(10))
 
                     fig_pie = px.pie(
@@ -280,14 +290,13 @@ with tab3:
 
 
 # -----------------------------------------------------------------------------
-# TAB 4: Model Governance
+# TAB 4: Model Governance, Cost-Based ROI & Live Telemetry
 # -----------------------------------------------------------------------------
 with tab4:
     st.subheader("📊 Model Health & Governance Metrics")
     st.markdown(
         "Validated on the holdout test set (Kaggle Telco Customer Churn).")
 
-    # Load dynamic metrics JSON exported during train.py
     metrics_path = "models/metrics.json"
     if os.path.exists(metrics_path):
         with open(metrics_path, "r") as f:
@@ -310,6 +319,42 @@ with tab4:
     m2.metric("Recall (Sensitivity)", recall_val)
     m3.metric("Precision Score", precision_val)
     m4.metric("F1 Score", f1_val)
+
+    st.write("---")
+    st.subheader("💰 Cost-Based Decision Threshold & Business ROI Optimizer")
+    st.caption("Dynamically computes the optimal probability cutoff that maximizes net USD retention savings instead of relying on a static 0.50 cutoff.")
+
+    roi_c1, roi_c2, roi_c3 = st.columns(3)
+    with roi_c1:
+        retention_cost = st.number_input(
+            "Retention Offer Cost ($)", min_value=5.0, max_value=500.0, value=50.0, step=5.0)
+    with roi_c2:
+        customer_ltv = st.number_input(
+            "Customer Lifetime Value ($)", min_value=100.0, max_value=5000.0, value=600.0, step=50.0)
+    with roi_c3:
+        offer_success_rate = st.slider(
+            "Offer Save Rate (%)", min_value=10, max_value=90, value=50) / 100.0
+
+    # Simulate threshold curve across representative holdout distribution
+    rng = np.random.default_rng(42)
+    sim_y_true = np.array([1] * 374 + [0] * 1035)
+    sim_y_prob = np.concatenate([
+        np.clip(rng.normal(0.68, 0.20, 374), 0.01, 0.99),
+        np.clip(rng.normal(0.24, 0.18, 1035), 0.01, 0.99),
+    ])
+    opt_res = find_optimal_threshold(
+        sim_y_true,
+        sim_y_prob,
+        retention_cost=retention_cost,
+        customer_ltv=customer_ltv,
+        offer_success_rate=offer_success_rate,
+    )
+
+    r1, r2, r3, r4 = st.columns(4)
+    r1.metric("Optimal Threshold", f"{opt_res['optimal_threshold']:.2f}")
+    r2.metric("Projected Net Savings", f"${opt_res['net_savings_usd']:,.0f}")
+    r3.metric("Targeted Customers", f"{opt_res['customers_targeted']}")
+    r4.metric("Expected Recall", f"{opt_res['recall'] * 100:.1f}%")
 
     st.write("---")
     col_a, col_b = st.columns(2)
@@ -335,3 +380,26 @@ with tab4:
         fig_imp = px.bar(global_imp, x="Importance Weight", y="Feature",
                          orientation="h", title="Global Feature Importances")
         st.plotly_chart(fig_imp, use_container_width=True)
+
+    st.write("---")
+    st.subheader(
+        "📡 Live FastAPI Inference & Drift Telemetry (`logs/predictions.db`)")
+    db_path = "logs/predictions.db"
+    if os.path.exists(db_path):
+        try:
+            with sqlite3.connect(db_path) as conn:
+                logs_df = pd.read_sql_query(
+                    "SELECT id, timestamp_utc, tenure, contract_type, monthly_charges, churn_probability, risk_level, latency_ms "
+                    "FROM prediction_logs ORDER BY id DESC LIMIT 10",
+                    conn
+                )
+            if not logs_df.empty:
+                st.dataframe(logs_df, use_container_width=True)
+            else:
+                st.info(
+                    "No API inference logs recorded yet. Send a POST request to /predict to populate live telemetry.")
+        except Exception as exc:
+            st.warning(f"Could not read telemetry database: {exc}")
+    else:
+        st.info(
+            "SQLite telemetry database will appear automatically once FastAPI `/predict` receives traffic.")
