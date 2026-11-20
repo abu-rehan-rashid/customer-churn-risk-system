@@ -1,7 +1,7 @@
 import os
 import warnings
+
 import joblib
-import numpy as np
 import pandas as pd
 import shap
 
@@ -131,3 +131,4 @@ class ChurnRiskEngine:
         shap_df = shap_df.sort_values(by='Abs_Impact', ascending=True).tail(8).drop(columns=['Abs_Impact'])
 
         return shap_df
+

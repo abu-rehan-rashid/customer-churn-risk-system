@@ -8,9 +8,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY requirements.txt .
 
-RUN pip install --default-timeout=1000 --retries 10 -r requirements.txt
+RUN pip install --no-cache-dir --default-timeout=1000 --retries 10 -r requirements.txt
 
 COPY . .
 
-# Default command (Docker Compose isko override kar lega)
+# Default command (Docker Compose overrides this for UI vs API services)
 CMD ["uvicorn", "app:app", "--host", "0.0.0.0", "--port", "8000"]
