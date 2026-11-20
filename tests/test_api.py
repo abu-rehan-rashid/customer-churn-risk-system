@@ -1,10 +1,25 @@
 import sqlite3
 
 import numpy as np
+import pandas as pd
 from fastapi.testclient import TestClient
 
+import app as app_module
 from app import DB_PATH, app, init_db
 from src.threshold_optimizer import find_optimal_threshold
+
+
+class _DummyEngine:
+    """Fallback engine used in CI when binary .pkl model artifacts are gitignored."""
+
+    def predict_risk(self, df: pd.DataFrame) -> pd.DataFrame:
+        return pd.DataFrame(
+            [{"churn_probability": 0.72, "churn_predicted": True, "risk_tier": "HIGH"}]
+        )
+
+
+if app_module.engine is None:
+    app_module.engine = _DummyEngine()
 
 client = TestClient(app)
 

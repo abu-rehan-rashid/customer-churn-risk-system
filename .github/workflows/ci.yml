@@ -30,7 +30,7 @@ jobs:
         run: ruff check src/ tests/ app.py
 
       - name: Run pytest suite
-        run: pytest -v tests/
+        run: python -m pytest -v tests/
 
       - name: Verify Docker image build
         run: docker build -t churn-prediction-api:ci 
