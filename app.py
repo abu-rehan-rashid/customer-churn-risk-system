@@ -144,7 +144,7 @@ def predict_churn_risk(payload: CustomerPayload):
         record = results.to_dict(orient="records")[0]
     except Exception as exc:
         error_id = uuid.uuid4().hex[:8]
-        logger.exception("Prediction failure [%s]: %s", error_id, exc)
+        logger.exception("Prediction failure [%s]", error_id)
         raise HTTPException(
             status_code=500,
             detail=f"Inference failed (ref: {error_id}).",

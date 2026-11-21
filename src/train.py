@@ -17,7 +17,12 @@ from sklearn.metrics import (
     precision_recall_fscore_support,
     roc_auc_score,
 )
-from sklearn.model_selection import StratifiedKFold, cross_val_predict, cross_validate, train_test_split
+from sklearn.model_selection import (
+    StratifiedKFold,
+    cross_val_predict,
+    cross_validate,
+    train_test_split,
+)
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from xgboost import XGBClassifier
@@ -200,7 +205,7 @@ def train(data_path: str = "data/churn_data.csv", models_dir: str = "models") ->
     with open(imp_path, "w") as f:
         json.dump(real_importances, f, indent=4)
 
-    data_hash = hashlib.sha256(open(data_path, "rb").read()).hexdigest()[:16]
+    with open(data_path, "rb") as df_file:`n        data_hash = hashlib.sha256(df_file.read()).hexdigest()[:16]
     metrics_data = {
         "trained_at_utc": datetime.now(UTC).isoformat(),
         "dataset_sha256": data_hash,

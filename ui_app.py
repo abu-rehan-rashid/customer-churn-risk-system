@@ -1,11 +1,13 @@
 import json
 import os
 import sqlite3
+
 import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import streamlit as st
+
 from src.predict import ChurnRiskEngine
 from src.threshold_optimizer import find_optimal_threshold
 
@@ -202,7 +204,7 @@ with tab1:
                 },
             )
         )
-        fig_gauge.update_layout(height=180, margin=dict(l=15, r=15, t=15, b=5))
+        fig_gauge.update_layout(height=180, margin={"l": 15, "r": 15, "t": 15, "b": 5})
         st.plotly_chart(fig_gauge, use_container_width=True)
 
         st.markdown(
@@ -233,27 +235,27 @@ with tab1:
                     x=shap_df["SHAP_Value"],
                     y=shap_df["Feature"],
                     orientation="h",
-                    marker=dict(color=colors),
+                    marker={"color": colors},
                     width=0.55,
                 )
             )
             fig_shap.update_layout(
                 height=290,
                 showlegend=False,
-                margin=dict(l=10, r=10, t=10, b=10),
-                xaxis=dict(
-                    title="SHAP Log-Odds Impact (Red = Risk | Green = Retention)",
-                    zeroline=True,
-                    zerolinewidth=2,
-                    zerolinecolor="white",
-                    showgrid=True,
-                    gridcolor="rgba(255, 255, 255, 0.12)",
-                ),
-                yaxis=dict(
-                    type="category",
-                    categoryorder="array",
-                    categoryarray=shap_df["Feature"].tolist(),
-                ),
+                margin={"l": 10, "r": 10, "t": 10, "b": 10},
+                xaxis={
+                    "title": "SHAP Log-Odds Impact (Red = Risk | Green = Retention)",
+                    "zeroline": True,
+                    "zerolinewidth": 2,
+                    "zerolinecolor": "white",
+                    "showgrid": True,
+                    "gridcolor": "rgba(255, 255, 255, 0.12)",
+                },
+                yaxis={
+                    "type": "category",
+                    "categoryorder": "array",
+                    "categoryarray": shap_df["Feature"].tolist(),
+                },
             )
             st.plotly_chart(fig_shap, use_container_width=True)
 
@@ -302,7 +304,7 @@ with tab2:
     fig_sens.add_hline(
         y=70, line_dash="dash", line_color="red", annotation_text="High Risk Cutoff (70%)"
     )
-    fig_sens.update_layout(height=340, margin=dict(l=15, r=15, t=40, b=15))
+    fig_sens.update_layout(height=340, margin={"l": 15, "r": 15, "t": 40, "b": 15})
     st.plotly_chart(fig_sens, use_container_width=True)
 
 
@@ -375,7 +377,7 @@ with tab3:
                                     "Low Risk": "#00CC96",
                                 },
                             )
-                            fig_pie.update_layout(height=310, margin=dict(l=10, r=10, t=35, b=10))
+                            fig_pie.update_layout(height=310, margin={"l": 10, "r": 10, "t": 35, "b": 10})
                             st.plotly_chart(fig_pie, use_container_width=True)
                 except Exception as exc:
                     st.error(f"Batch scoring failed: {exc}")
@@ -443,7 +445,7 @@ with tab4:
             line_color="#00CC96",
             annotation_text=f"Optimal ({opt_res['optimal_threshold']:.2f})",
         )
-        fig_roi.update_layout(height=250, margin=dict(l=15, r=15, t=35, b=10))
+        fig_roi.update_layout(height=250, margin={"l": 15, "r": 15, "t": 35, "b": 10})
         st.plotly_chart(fig_roi, use_container_width=True)
     else:
         st.warning("Out-of-fold predictions missing. Run 'python src/train.py' to enable cost-threshold simulation.")
@@ -495,7 +497,7 @@ with tab4:
                     cm_data,
                     text_auto=True,
                     title="Holdout Confusion Matrix",
-                    labels=dict(x="Predicted", y="Actual", color="Count"),
+                    labels={"x": "Predicted", "y": "Actual", "color": "Count"},
                     x=["Retained (0)", "Churned (1)"],
                     y=["Retained (0)", "Churned (1)"],
                     color_continuous_scale="Blues",
