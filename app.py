@@ -142,7 +142,7 @@ def predict_churn_risk(payload: CustomerPayload):
         input_data = pd.DataFrame([payload.model_dump()])
         results = engine.predict_risk(input_data)
         record = results.to_dict(orient="records")[0]
-    except Exception as exc:
+    except Exception:
         error_id = uuid.uuid4().hex[:8]
         logger.exception("Prediction failure [%s]", error_id)
         raise HTTPException(
