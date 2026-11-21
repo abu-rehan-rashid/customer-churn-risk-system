@@ -205,7 +205,8 @@ def train(data_path: str = "data/churn_data.csv", models_dir: str = "models") ->
     with open(imp_path, "w") as f:
         json.dump(real_importances, f, indent=4)
 
-    with open(data_path, "rb") as df_file:`n        data_hash = hashlib.sha256(df_file.read()).hexdigest()[:16]
+    with open(data_path, "rb") as df_file:
+        data_hash = hashlib.sha256(df_file.read()).hexdigest()[:16]
     metrics_data = {
         "trained_at_utc": datetime.now(UTC).isoformat(),
         "dataset_sha256": data_hash,
