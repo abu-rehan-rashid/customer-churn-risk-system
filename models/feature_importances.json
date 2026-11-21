@@ -1,0 +1,78 @@
+[
+    {
+        "Feature": "Contract",
+        "Importance Weight": 0.3021
+    },
+    {
+        "Feature": "tenure",
+        "Importance Weight": 0.1237
+    },
+    {
+        "Feature": "MonthlyCharges",
+        "Importance Weight": 0.0834
+    },
+    {
+        "Feature": "OnlineSecurity",
+        "Importance Weight": 0.0808
+    },
+    {
+        "Feature": "InternetService",
+        "Importance Weight": 0.0745
+    },
+    {
+        "Feature": "PaymentMethod",
+        "Importance Weight": 0.0559
+    },
+    {
+        "Feature": "TechSupport",
+        "Importance Weight": 0.0554
+    },
+    {
+        "Feature": "TotalCharges",
+        "Importance Weight": 0.0481
+    },
+    {
+        "Feature": "PaperlessBilling",
+        "Importance Weight": 0.0394
+    },
+    {
+        "Feature": "MultipleLines",
+        "Importance Weight": 0.0351
+    },
+    {
+        "Feature": "OnlineBackup",
+        "Importance Weight": 0.0219
+    },
+    {
+        "Feature": "StreamingMovies",
+        "Importance Weight": 0.0199
+    },
+    {
+        "Feature": "StreamingTV",
+        "Importance Weight": 0.0148
+    },
+    {
+        "Feature": "SeniorCitizen",
+        "Importance Weight": 0.0137
+    },
+    {
+        "Feature": "Dependents",
+        "Importance Weight": 0.0133
+    },
+    {
+        "Feature": "gender",
+        "Importance Weight": 0.0067
+    },
+    {
+        "Feature": "PhoneService",
+        "Importance Weight": 0.0061
+    },
+    {
+        "Feature": "DeviceProtection",
+        "Importance Weight": 0.0029
+    },
+    {
+        "Feature": "Partner",
+        "Importance Weight": 0.0021
+    }
+]

@@ -1,16 +1,43 @@
 {
-    "roc_auc": 0.846,
-    "recall": 0.802,
-    "precision": 0.525,
-    "f1_score": 0.635,
+    "trained_at_utc": "2026-11-21T06:37:09.453270+00:00",
+    "dataset_sha256": "489d91f67094e9da",
+    "roc_auc": 0.845,
+    "pr_auc": 0.658,
+    "brier_score": 0.1356,
+    "recall": 0.529,
+    "precision": 0.669,
+    "f1_score": 0.591,
+    "cv_roc_auc_xgb": 0.8463,
+    "cv_roc_auc_logreg_baseline": 0.8451,
     "confusion_matrix": [
         [
-            764,
-            271
+            937,
+            98
         ],
         [
-            74,
-            300
+            176,
+            198
         ]
+    ],
+    "features": [
+        "SeniorCitizen",
+        "tenure",
+        "MonthlyCharges",
+        "TotalCharges",
+        "gender",
+        "Partner",
+        "Dependents",
+        "PhoneService",
+        "MultipleLines",
+        "InternetService",
+        "OnlineSecurity",
+        "OnlineBackup",
+        "DeviceProtection",
+        "TechSupport",
+        "StreamingTV",
+        "StreamingMovies",
+        "Contract",
+        "PaperlessBilling",
+        "PaymentMethod"
     ]
 }

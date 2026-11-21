@@ -145,7 +145,7 @@ payload = pd.DataFrame(
 # Header
 st.title("🛡️ Enterprise Churn & Revenue Retention Platform")
 st.caption(
-    "Real-Time Churn Scoring · Mathematical SHAP Attribution · Cost-Based ROI Optimization · Live API Telemetry"
+    "Calibrated Churn Scoring · Mathematical SHAP Attribution · Cost-Based ROI Optimization · Live API Telemetry"
 )
 
 # Tabs
@@ -220,7 +220,8 @@ with tab1:
         st.markdown("**🔍 Key Churn & Retention Drivers (SHAP Attribution)**")
         try:
             shap_df = engine.explain_instance(payload)
-        except Exception:
+        except Exception as exc:
+            st.warning(f"SHAP attribution unavailable: {exc}")
             shap_df = None
 
         if shap_df is not None and not shap_df.empty and "SHAP_Value" in shap_df.columns:
@@ -258,38 +259,40 @@ with tab1:
 
 
 # -----------------------------------------------------------------------------
-# TAB 2: Retention Intervention Simulator
+# TAB 2: Retention Intervention Simulator (Observational What-If)
 # -----------------------------------------------------------------------------
 with tab2:
     st.markdown(
-        "Compare how migrating the selected customer from **Month-to-month** to **One year** or **Two year** contracts reduces churn risk across tenure."
+        "Observational model what-if comparing predicted churn trajectories across **Month-to-month**, **One year**, and **Two year** contracts over tenure."
     )
     sim_range = st.slider("Tenure Horizon (Months)", 1, 72, (1, 36))
     tenures = list(range(sim_range[0], sim_range[1] + 1))
 
-    sim_rows = []
+    batch_sim_rows = []
     for contract_opt in ["Month-to-month", "One year", "Two year"]:
         for t in tenures:
-            row = payload.copy()
+            row = payload.iloc[0].to_dict()
             row["Contract"] = contract_opt
             row["tenure"] = t
-            row["TotalCharges"] = t * row["MonthlyCharges"].values[0]
-            p = float(engine.predict_risk(row).iloc[0]["churn_probability"]) * 100
-            sim_rows.append(
-                {
-                    "Tenure (Months)": t,
-                    "Contract Type": contract_opt,
-                    "Churn Probability (%)": p,
-                }
-            )
+            row["TotalCharges"] = t * row["MonthlyCharges"]
+            batch_sim_rows.append(row)
 
-    sens_df = pd.DataFrame(sim_rows)
+    sim_input_df = pd.DataFrame(batch_sim_rows)
+    sim_preds = engine.predict_risk(sim_input_df)
+    sens_df = pd.DataFrame(
+        {
+            "Tenure (Months)": sim_input_df["tenure"],
+            "Contract Type": sim_input_df["Contract"],
+            "Churn Probability (%)": sim_preds["churn_probability"] * 100.0,
+        }
+    )
+
     fig_sens = px.line(
         sens_df,
         x="Tenure (Months)",
         y="Churn Probability (%)",
         color="Contract Type",
-        title="Churn Trajectory by Contract Lock-In Strategy",
+        title="Model Churn Trajectory by Contract Lock-In Profile",
         color_discrete_map={
             "Month-to-month": "#FF4B4B",
             "One year": "#FFA500",
@@ -314,59 +317,68 @@ with tab3:
             st.warning("Uploaded CSV file is empty.")
         else:
             if st.button("🚀 Run Portfolio Risk & Budget Analysis"):
-                with st.spinner("Scoring portfolio..."):
-                    results_df = engine.predict_risk(batch_df)
-                    final_batch = pd.concat(
-                        [
-                            batch_df.reset_index(drop=True),
-                            results_df.reset_index(drop=True),
-                        ],
-                        axis=1,
-                    )
-
-                    high_risk_df = final_batch[final_batch["risk_level"] == "High Risk"]
-                    arr_at_risk = (
-                        high_risk_df["MonthlyCharges"].sum() * 12.0
-                        if "MonthlyCharges" in final_batch.columns
-                        else len(high_risk_df) * 600.0
-                    )
-                    est_campaign_cost = len(high_risk_df) * 50.0
-
-                    b1, b2, b3, b4 = st.columns(4)
-                    b1.metric("Total Accounts Scored", f"{len(final_batch):,}")
-                    b2.metric("High-Risk Accounts", f"{len(high_risk_df):,}")
-                    b3.metric("High-Risk Annual ARR", f"${arr_at_risk:,.0f}")
-                    b4.metric("Est. Retention Budget", f"${est_campaign_cost:,.0f}")
-
-                    c_tbl, c_pie = st.columns([1.4, 1])
-                    with c_tbl:
-                        cols_to_show = [
-                            c
-                            for c in [
-                                "customerID",
-                                "tenure",
-                                "Contract",
-                                "MonthlyCharges",
-                                "churn_probability",
-                                "risk_level",
-                            ]
-                            if c in final_batch.columns
-                        ]
-                        st.dataframe(final_batch[cols_to_show].head(12), use_container_width=True)
-                    with c_pie:
-                        fig_pie = px.pie(
-                            final_batch,
-                            names="risk_level",
-                            title="Risk Tier Breakdown",
-                            color="risk_level",
-                            color_discrete_map={
-                                "High Risk": "#FF4B4B",
-                                "Medium Risk": "#FFA500",
-                                "Low Risk": "#00CC96",
-                            },
+                try:
+                    with st.spinner("Scoring portfolio..."):
+                        results_df = engine.predict_risk(batch_df)
+                        final_batch = pd.concat(
+                            [
+                                batch_df.reset_index(drop=True),
+                                results_df.reset_index(drop=True),
+                            ],
+                            axis=1,
                         )
-                        fig_pie.update_layout(height=310, margin=dict(l=10, r=10, t=35, b=10))
-                        st.plotly_chart(fig_pie, use_container_width=True)
+
+                        high_risk_df = final_batch[final_batch["risk_level"] == "High Risk"]
+                        arr_at_risk = (
+                            high_risk_df["MonthlyCharges"].sum() * 12.0
+                            if "MonthlyCharges" in final_batch.columns
+                            else len(high_risk_df) * 600.0
+                        )
+                        est_campaign_cost = len(high_risk_df) * 50.0
+
+                        b1, b2, b3, b4 = st.columns(4)
+                        b1.metric("Total Accounts Scored", f"{len(final_batch):,}")
+                        b2.metric("High-Risk Accounts", f"{len(high_risk_df):,}")
+                        b3.metric("High-Risk Annual ARR", f"${arr_at_risk:,.0f}")
+                        b4.metric("Est. Retention Budget", f"${est_campaign_cost:,.0f}")
+
+                        c_tbl, c_pie = st.columns([1.4, 1])
+                        with c_tbl:
+                            cols_to_show = [
+                                c
+                                for c in [
+                                    "customerID",
+                                    "tenure",
+                                    "Contract",
+                                    "MonthlyCharges",
+                                    "churn_probability",
+                                    "risk_level",
+                                ]
+                                if c in final_batch.columns
+                            ]
+                            st.dataframe(final_batch[cols_to_show].head(12), use_container_width=True)
+                            st.download_button(
+                                "⬇️ Download Scored Portfolio CSV",
+                                data=final_batch.to_csv(index=False).encode("utf-8"),
+                                file_name="scored_churn_portfolio.csv",
+                                mime="text/csv",
+                            )
+                        with c_pie:
+                            fig_pie = px.pie(
+                                final_batch,
+                                names="risk_level",
+                                title="Risk Tier Breakdown",
+                                color="risk_level",
+                                color_discrete_map={
+                                    "High Risk": "#FF4B4B",
+                                    "Medium Risk": "#FFA500",
+                                    "Low Risk": "#00CC96",
+                                },
+                            )
+                            fig_pie.update_layout(height=310, margin=dict(l=10, r=10, t=35, b=10))
+                            st.plotly_chart(fig_pie, use_container_width=True)
+                except Exception as exc:
+                    st.error(f"Batch scoring failed: {exc}")
 
 
 # -----------------------------------------------------------------------------
@@ -380,61 +392,63 @@ with tab4:
         )
     with roi_c2:
         customer_ltv = st.number_input(
-            "Customer Lifetime Value ($)", min_value=100.0, max_value=5000.0, value=600.0, step=50.0
+            "Assumed Saved Customer Value ($)", min_value=100.0, max_value=5000.0, value=600.0, step=50.0
         )
     with roi_c3:
         offer_success_rate = (
-            st.slider("Campaign Save Rate (%)", min_value=10, max_value=90, value=50) / 100.0
+            st.slider("Assumed Campaign Save Rate (%)", min_value=10, max_value=90, value=50) / 100.0
         )
 
-    rng = np.random.default_rng(42)
-    sim_y_true = np.array([1] * 374 + [0] * 1035)
-    sim_y_prob = np.concatenate(
-        [
-            np.clip(rng.normal(0.68, 0.20, 374), 0.01, 0.99),
-            np.clip(rng.normal(0.24, 0.18, 1035), 0.01, 0.99),
-        ]
-    )
-    opt_res = find_optimal_threshold(
-        sim_y_true,
-        sim_y_prob,
-        retention_cost=retention_cost,
-        customer_ltv=customer_ltv,
-        offer_success_rate=offer_success_rate,
-    )
+    oof_path = "models/oof_predictions.csv"
+    if os.path.exists(oof_path):
+        oof_df = pd.read_csv(oof_path)
+        eval_y_true = oof_df["y_true"].to_numpy(dtype=int)
+        eval_y_prob = oof_df["y_prob"].to_numpy(dtype=float)
 
-    r1, r2, r3, r4 = st.columns(4)
-    r1.metric("Optimal Probability Cutoff", f"{opt_res['optimal_threshold']:.2f}")
-    r2.metric("Projected Net Savings", f"${opt_res['net_savings_usd']:,.0f}")
-    r3.metric("Customers Targeted", f"{opt_res['customers_targeted']}")
-    r4.metric("Expected Churn Recall", f"{opt_res['recall'] * 100:.1f}%")
+        opt_res = find_optimal_threshold(
+            eval_y_true,
+            eval_y_prob,
+            retention_cost=retention_cost,
+            customer_ltv=customer_ltv,
+            offer_success_rate=offer_success_rate,
+        )
 
-    thresholds_grid = np.linspace(0.10, 0.90, 41)
-    curve_savings = []
-    for th in thresholds_grid:
-        preds = (sim_y_prob >= th).astype(int)
-        tp = int(((preds == 1) & (sim_y_true == 1)).sum())
-        targeted = int(preds.sum())
-        net = (tp * offer_success_rate * customer_ltv) - (targeted * retention_cost)
-        curve_savings.append({"Probability Threshold": round(float(th), 2), "Net Savings ($)": net})
+        r1, r2, r3, r4 = st.columns(4)
+        r1.metric("Optimal Probability Cutoff", f"{opt_res['optimal_threshold']:.2f}")
+        r2.metric("Projected Net Savings (OOF)", f"${opt_res['net_savings_usd']:,.0f}")
+        r3.metric("Customers Targeted", f"{opt_res['customers_targeted']:,}")
+        r4.metric("Expected Churn Recall", f"{opt_res['recall'] * 100:.1f}%")
 
-    curve_df = pd.DataFrame(curve_savings)
-    fig_roi = px.area(
-        curve_df,
-        x="Probability Threshold",
-        y="Net Savings ($)",
-        title="Net Financial Savings vs. Decision Threshold",
-    )
-    fig_roi.add_vline(
-        x=opt_res["optimal_threshold"],
-        line_dash="dash",
-        line_color="#00CC96",
-        annotation_text=f"Optimal ({opt_res['optimal_threshold']:.2f})",
-    )
-    fig_roi.update_layout(height=250, margin=dict(l=15, r=15, t=35, b=10))
-    st.plotly_chart(fig_roi, use_container_width=True)
+        thresholds_grid = np.linspace(0.10, 0.90, 41)
+        curve_savings = []
+        for th in thresholds_grid:
+            preds = (eval_y_prob >= th).astype(int)
+            tp = int(((preds == 1) & (eval_y_true == 1)).sum())
+            targeted = int(preds.sum())
+            net = (tp * offer_success_rate * customer_ltv) - (targeted * retention_cost)
+            curve_savings.append(
+                {"Probability Threshold": round(float(th), 2), "Net Savings ($)": net}
+            )
 
-    with st.expander("📡 Live FastAPI Inference & SLA Telemetry (logs/predictions.db)", expanded=True):
+        curve_df = pd.DataFrame(curve_savings)
+        fig_roi = px.area(
+            curve_df,
+            x="Probability Threshold",
+            y="Net Savings ($)",
+            title="Out-of-Fold Net Financial Savings vs. Decision Threshold (Assumption-Driven What-If)",
+        )
+        fig_roi.add_vline(
+            x=opt_res["optimal_threshold"],
+            line_dash="dash",
+            line_color="#00CC96",
+            annotation_text=f"Optimal ({opt_res['optimal_threshold']:.2f})",
+        )
+        fig_roi.update_layout(height=250, margin=dict(l=15, r=15, t=35, b=10))
+        st.plotly_chart(fig_roi, use_container_width=True)
+    else:
+        st.warning("Out-of-fold predictions missing. Run 'python src/train.py' to enable cost-threshold simulation.")
+
+    with st.expander("📡 Live FastAPI Inference & Request Telemetry (logs/predictions.db)", expanded=True):
         db_path = "logs/predictions.db"
         if os.path.exists(db_path):
             try:
@@ -461,58 +475,49 @@ with tab4:
 
     with st.expander("📊 Holdout Model Validation & Governance Metrics", expanded=False):
         metrics_path = "models/metrics.json"
+        imp_path = "models/feature_importances.json"
+
         if os.path.exists(metrics_path):
             with open(metrics_path, "r") as f:
                 metrics = json.load(f)
-            roc_auc_val = f"{float(metrics.get('roc_auc', 0.846)):.3f}"
-            recall_val = f"{float(metrics.get('recall', 0.802)) * 100:.1f}%"
-            precision_val = f"{float(metrics.get('precision', 0.525)) * 100:.1f}%"
-            f1_val = f"{float(metrics.get('f1_score', 0.635)):.3f}"
-            cm_data = np.array(metrics.get("confusion_matrix", [[764, 271], [74, 300]]))
+
+            m1, m2, m3, m4, m5 = st.columns(5)
+            m1.metric("Holdout ROC-AUC", f"{float(metrics['roc_auc']):.3f}")
+            m2.metric("Holdout PR-AUC", f"{float(metrics.get('pr_auc', 0.0)):.3f}")
+            m3.metric("Brier Score", f"{float(metrics.get('brier_score', 0.0)):.4f}")
+            m4.metric("Recall @0.5", f"{float(metrics['recall']) * 100:.1f}%")
+            m5.metric("Precision @0.5", f"{float(metrics['precision']) * 100:.1f}%")
+
+            col_a, col_b = st.columns(2)
+            with col_a:
+                cm_data = np.array(metrics["confusion_matrix"])
+                fig_cm = px.imshow(
+                    cm_data,
+                    text_auto=True,
+                    title="Holdout Confusion Matrix",
+                    labels=dict(x="Predicted", y="Actual", color="Count"),
+                    x=["Retained (0)", "Churned (1)"],
+                    y=["Retained (0)", "Churned (1)"],
+                    color_continuous_scale="Blues",
+                )
+                fig_cm.update_layout(height=280)
+                st.plotly_chart(fig_cm, use_container_width=True)
+
+            with col_b:
+                if os.path.exists(imp_path):
+                    with open(imp_path, "r") as f:
+                        imp_records = json.load(f)
+                    global_imp = pd.DataFrame(imp_records).head(8).sort_values("Importance Weight")
+                    fig_imp = px.bar(
+                        global_imp,
+                        x="Importance Weight",
+                        y="Feature",
+                        orientation="h",
+                        title="Holdout Mean |SHAP| Feature Importance Share",
+                    )
+                    fig_imp.update_layout(height=280)
+                    st.plotly_chart(fig_imp, use_container_width=True)
+                else:
+                    st.info("Run 'python src/train.py' to compute feature importances.")
         else:
-            roc_auc_val, recall_val, precision_val, f1_val = "0.846", "80.2%", "52.5%", "0.635"
-            cm_data = np.array([[764, 271], [74, 300]])
-
-        m1, m2, m3, m4 = st.columns(4)
-        m1.metric("ROC-AUC Score", roc_auc_val)
-        m2.metric("Recall (Sensitivity)", recall_val)
-        m3.metric("Precision Score", precision_val)
-        m4.metric("F1 Score", f1_val)
-
-        col_a, col_b = st.columns(2)
-        with col_a:
-            fig_cm = px.imshow(
-                cm_data,
-                text_auto=True,
-                title="Holdout Confusion Matrix",
-                labels=dict(x="Predicted", y="Actual", color="Count"),
-                x=["Retained (0)", "Churned (1)"],
-                y=["Retained (0)", "Churned (1)"],
-                color_continuous_scale="Blues",
-            )
-            fig_cm.update_layout(height=280)
-            st.plotly_chart(fig_cm, use_container_width=True)
-
-        with col_b:
-            global_imp = pd.DataFrame(
-                {
-                    "Feature": [
-                        "Contract Type",
-                        "Tenure",
-                        "Internet Service",
-                        "Total Charges",
-                        "Monthly Charges",
-                        "Tech Support",
-                    ],
-                    "Importance Weight": [0.38, 0.22, 0.15, 0.11, 0.08, 0.06],
-                }
-            ).sort_values("Importance Weight")
-            fig_imp = px.bar(
-                global_imp,
-                x="Importance Weight",
-                y="Feature",
-                orientation="h",
-                title="Global Feature Importances",
-            )
-            fig_imp.update_layout(height=280)
-            st.plotly_chart(fig_imp, use_container_width=True)
+            st.warning("Governance metrics missing. Run 'python src/train.py' first.")
