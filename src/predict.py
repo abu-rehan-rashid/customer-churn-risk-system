@@ -80,10 +80,10 @@ class ChurnRiskEngine:
 
         results = []
         for prob in probabilities:
-            if prob >= 0.70:
+            if prob >= 0.55:
                 risk_level = "High Risk"
                 action = "Immediate Retention Offer / Priority Call"
-            elif prob >= 0.35:
+            elif prob >= 0.23:
                 risk_level = "Medium Risk"
                 action = "Targeted Email Campaign & Feedback Survey"
             else:

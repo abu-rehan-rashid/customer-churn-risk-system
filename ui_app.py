@@ -197,9 +197,9 @@ with tab1:
                     "axis": {"range": [0, 100]},
                     "bar": {"color": color},
                     "steps": [
-                        {"range": [0, 35], "color": "rgba(0, 204, 150, 0.15)"},
-                        {"range": [35, 70], "color": "rgba(255, 165, 0, 0.15)"},
-                        {"range": [70, 100], "color": "rgba(255, 75, 75, 0.15)"},
+                        {"range": [0, 23], "color": "rgba(0, 204, 150, 0.15)"},
+                        {"range": [23, 55], "color": "rgba(255, 165, 0, 0.15)"},
+                        {"range": [55, 100], "color": "rgba(255, 75, 75, 0.15)"},
                     ],
                 },
             )
@@ -302,7 +302,7 @@ with tab2:
         },
     )
     fig_sens.add_hline(
-        y=70, line_dash="dash", line_color="red", annotation_text="High Risk Cutoff (70%)"
+        y=55, line_dash="dash", line_color="red", annotation_text="High Risk Cutoff (55%)"
     )
     fig_sens.update_layout(height=340, margin={"l": 15, "r": 15, "t": 40, "b": 15})
     st.plotly_chart(fig_sens, use_container_width=True)
