@@ -58,9 +58,9 @@ def get_db():
 
 try:
     engine: ChurnRiskEngine | None = ChurnRiskEngine()
-except Exception as exc:
+except Exception:
     logger.exception(
-        "Failed to initialize ChurnRiskEngine at startup: %s", exc)
+        "Failed to initialize ChurnRiskEngine at startup")
     engine = None
 
 
